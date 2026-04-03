@@ -56,12 +56,25 @@ export function useComidas(userId) {
     setComidas(prev => prev.filter(c => c.id !== id))
   }
 
+  async function addHidratacion(ml) {
+    const now = new Date().toISOString()
+    const { data, error: insertError } = await supabase
+      .from('proymoun_comidas')
+      .insert({ user_id: userId, tipo: 'agua', descripcion: 'Agua', hidratacion_ml: ml, fecha: now })
+      .select()
+      .single()
+    if (insertError) throw insertError
+    setComidas(prev => [data, ...prev])
+    return data
+  }
+
   // ── Métricas derivadas ──────────────────────────────────────────
 
   // Comidas de hoy
   const hoy = new Date().toISOString().split('T')[0]
   const comidasHoy = comidas.filter(c => c.fecha?.startsWith(hoy))
-  const caloriasHoy = comidasHoy.reduce((sum, c) => sum + (c.calorias || 0), 0)
+  const caloriasHoy    = comidasHoy.reduce((sum, c) => sum + (c.calorias      || 0), 0)
+  const hidratacionHoy = comidasHoy.reduce((sum, c) => sum + (c.hidratacion_ml || 0), 0)
 
   // Calorías últimos 7 días agrupadas por día
   const caloriasSemanales = (() => {
@@ -94,12 +107,14 @@ export function useComidas(userId) {
     error,
     comidasHoy,
     caloriasHoy,
+    hidratacionHoy,
     caloriasSemanales,
     comidasPorFecha,
     TIPOS_COMIDA,
     addComida,
     updateComida,
     deleteComida,
+    addHidratacion,
     refetch: fetchComidas,
   }
 }

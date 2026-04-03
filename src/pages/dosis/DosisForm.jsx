@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import MounjaroDial from '../../components/ui/MounjaroDial.jsx'
 
-const DOSIS_VALIDAS = [2.5, 5, 7.5, 10, 12.5, 15]
-const ZONAS        = ['abdomen', 'muslo', 'brazo']
-const EFECTOS      = ['náuseas', 'fatiga', 'dolor de cabeza', 'estreñimiento', 'otros']
+const ZONAS   = ['abdomen', 'muslo', 'brazo']
+const EFECTOS = ['náuseas', 'fatiga', 'dolor de cabeza', 'estreñimiento', 'otros']
 
 const inputStyle = {
   width: '100%',
@@ -32,12 +32,13 @@ export default function DosisForm({ onClose, onSave, initialData }) {
   const hoy = new Date().toISOString().slice(0, 16)
 
   const [fecha,    setFecha]    = useState(initialData?.fecha?.slice(0, 16) || hoy)
-  const [dosis,    setDosis]    = useState(initialData?.dosis_mg || null)
+  const [dosis,    setDosis]    = useState(initialData?.dosis_mg || 2.5)
   const [zona,     setZona]     = useState(initialData?.zona || null)
   const [efectos,  setEfectos]  = useState(initialData?.efectos_secundarios || [])
   const [notas,    setNotas]    = useState(initialData?.notas || '')
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState(null)
+  const dialRef = useRef(null)
 
   function toggleEfecto(ef) {
     setEfectos(prev =>
@@ -49,6 +50,8 @@ export default function DosisForm({ onClose, onSave, initialData }) {
     e.preventDefault()
     if (!dosis) { setError('Selecciona la dosis'); return }
     if (!zona)  { setError('Selecciona la zona de inyección'); return }
+    // Disparar animación de inyección antes de guardar
+    dialRef.current?.triggerInject()
     setLoading(true); setError(null)
     try {
       await onSave({
@@ -101,29 +104,10 @@ export default function DosisForm({ onClose, onSave, initialData }) {
             <input type="datetime-local" value={fecha} onChange={e => setFecha(e.target.value)} style={inputStyle} />
           </div>
 
-          {/* Dosis */}
+          {/* Dial de dosis */}
           <div>
-            <label style={labelStyle}>Dosis (mg)</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-              {DOSIS_VALIDAS.map(d => (
-                <button
-                  key={d} type="button"
-                  onClick={() => setDosis(d)}
-                  style={{
-                    padding: '12px 4px',
-                    background: dosis === d ? '#ffffff' : '#1c1c1c',
-                    color:      dosis === d ? '#0a0a0a' : '#888888',
-                    border: `1px solid ${dosis === d ? '#ffffff' : '#2a2a2a'}`,
-                    borderRadius: 4, cursor: 'pointer',
-                    fontSize: 15, fontWeight: 700,
-                    fontFamily: 'Space Mono, monospace',
-                    transition: 'all 150ms',
-                  }}
-                >
-                  {d}
-                </button>
-              ))}
-            </div>
+            <label style={labelStyle}>Dosis — toca el dial para ajustar</label>
+            <MounjaroDial ref={dialRef} value={dosis} onChange={setDosis} />
           </div>
 
           {/* Zona */}

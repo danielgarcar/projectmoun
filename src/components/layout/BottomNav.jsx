@@ -1,4 +1,6 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { gsap } from 'gsap';
 
 const NAV_ITEMS = [
   {
@@ -72,25 +74,90 @@ const NAV_ITEMS = [
 ];
 
 export default function BottomNav() {
+  const location = useLocation();
+  const navRef       = useRef(null);
+  const indicatorRef = useRef(null);
+  const itemRefs     = useRef([]);
+  const isFirst      = useRef(true);
+
+  useEffect(() => {
+    const activeIndex = NAV_ITEMS.findIndex(item => item.to === location.pathname);
+    if (
+      activeIndex === -1 ||
+      !itemRefs.current[activeIndex] ||
+      !indicatorRef.current ||
+      !navRef.current
+    ) return;
+
+    const navRect  = navRef.current.getBoundingClientRect();
+    const itemEl   = itemRefs.current[activeIndex];
+    const itemRect = itemEl.getBoundingClientRect();
+    const iW       = 24;
+    const targetX  = itemRect.left - navRect.left + (itemRect.width - iW) / 2;
+
+    if (isFirst.current) {
+      gsap.set(indicatorRef.current, { x: targetX });
+      isFirst.current = false;
+    } else {
+      gsap.to(indicatorRef.current, { x: targetX, duration: 0.38, ease: 'power3.out' });
+      // Bounce en el ícono activo
+      const svg = itemEl.querySelector('svg');
+      if (svg) {
+        gsap.fromTo(svg, { scale: 1.25 }, { scale: 1, duration: 0.35, ease: 'back.out(3)' });
+      }
+    }
+  }, [location.pathname]);
+
   return (
     <nav
+      ref={navRef}
       style={{
         position: 'fixed',
         bottom: 0,
         left: 0,
         right: 0,
         height: 'var(--bottom-nav-h)',
-        background: 'rgba(10,10,10,0.96)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
+        background: 'rgba(10,10,10,0.97)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
         borderTop: '1px solid var(--color-border)',
         zIndex: 50,
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
-      <ul style={{ display: 'flex', height: '100%', alignItems: 'stretch', justifyContent: 'space-around', listStyle: 'none', margin: 0, padding: 0 }}>
-        {NAV_ITEMS.map(({ to, label, icon }) => (
-          <li key={to} style={{ flex: 1 }}>
+      {/* Indicador deslizante en la parte superior */}
+      <div
+        ref={indicatorRef}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: 24,
+          height: 2,
+          background: 'var(--color-accent-white)',
+          borderRadius: '0 0 3px 3px',
+          pointerEvents: 'none',
+          willChange: 'transform',
+        }}
+      />
+
+      <ul
+        style={{
+          display: 'flex',
+          height: '100%',
+          alignItems: 'stretch',
+          justifyContent: 'space-around',
+          listStyle: 'none',
+          margin: 0,
+          padding: 0,
+        }}
+      >
+        {NAV_ITEMS.map(({ to, label, icon }, i) => (
+          <li
+            key={to}
+            ref={el => { itemRefs.current[i] = el; }}
+            style={{ flex: 1 }}
+          >
             <NavLink
               to={to}
               style={({ isActive }) => ({
@@ -102,11 +169,19 @@ export default function BottomNav() {
                 gap: '3px',
                 color: isActive ? 'var(--color-accent-white)' : 'var(--color-text-muted)',
                 textDecoration: 'none',
-                transition: 'color 150ms',
+                transition: 'color 200ms',
               })}
             >
               {icon}
-              <span style={{ fontSize: '9px', fontFamily: 'var(--font-body)', fontWeight: 500, letterSpacing: '0.02em' }}>
+              <span
+                style={{
+                  fontSize: '9px',
+                  fontFamily: 'var(--font-body)',
+                  fontWeight: 500,
+                  letterSpacing: '0.02em',
+                  transition: 'opacity 200ms',
+                }}
+              >
                 {label}
               </span>
             </NavLink>

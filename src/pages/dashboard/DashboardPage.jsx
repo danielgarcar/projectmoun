@@ -1,4 +1,6 @@
+import { useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { gsap } from 'gsap';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useProfile } from '../../hooks/useProfile.js';
 import { usePesos } from '../../hooks/usePesos.js';
@@ -33,20 +35,40 @@ function SectionTitle({ children }) {
 function StatCard({ label, value, unit, accent, sub }) {
   const numRef = useCountUp(value);
   return (
-    <div style={{ ...card, padding: '14px', borderLeft: `2px solid ${accent || 'var(--color-border)'}` }}>
-      <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '6px', fontFamily: 'var(--font-body)' }}>
+    <div style={{
+      ...card,
+      padding: '14px',
+      borderLeft: `2px solid ${accent || 'var(--color-border)'}`,
+      transition: 'border-color 0.3s',
+    }}>
+      <div style={{
+        fontSize: '10px', color: 'var(--color-text-muted)',
+        textTransform: 'uppercase', letterSpacing: '0.07em',
+        marginBottom: '6px', fontFamily: 'var(--font-body)',
+      }}>
         {label}
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-        <span ref={numRef} style={{ fontSize: '26px', fontWeight: 700, color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
+        <span
+          ref={numRef}
+          style={{
+            fontSize: '26px', fontWeight: 700,
+            color: 'var(--color-text-primary)',
+            fontFamily: 'var(--font-mono)', lineHeight: 1,
+          }}
+        >
           {value ?? '—'}
         </span>
         {unit && (
-          <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', fontFamily: 'var(--font-body)' }}>{unit}</span>
+          <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', fontFamily: 'var(--font-body)' }}>
+            {unit}
+          </span>
         )}
       </div>
       {sub && (
-        <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: '4px', fontFamily: 'var(--font-body)' }}>{sub}</div>
+        <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: '4px', fontFamily: 'var(--font-body)' }}>
+          {sub}
+        </div>
       )}
     </div>
   );
@@ -68,8 +90,24 @@ export default function DashboardPage() {
   const { caloriasHoy } = useComidas(user?.id);
   const { sesionesEsemana } = useSesiones(user?.id);
 
-  const diasRef  = useCountUp(diasParaProximaDosis, { suffix: 'd' });
-  const calsRef  = useCountUp(
+  const mainRef = useRef(null);
+
+  // Entrada escalonada de secciones al montar
+  useEffect(() => {
+    if (!mainRef.current) return;
+    const sections = mainRef.current.querySelectorAll('.dash-section');
+    gsap.from(sections, {
+      y: 20,
+      opacity: 0,
+      duration: 0.45,
+      stagger: 0.09,
+      ease: 'power3.out',
+      clearProps: 'all',
+    });
+  }, []);
+
+  const diasRef = useCountUp(diasParaProximaDosis, { suffix: 'd' });
+  const calsRef = useCountUp(
     caloriasHoy > 0 ? caloriasHoy : null,
     { formatter: (v) => Math.round(v).toLocaleString('es-ES') }
   );
@@ -77,10 +115,34 @@ export default function DashboardPage() {
   const unidad   = profile?.unidad_peso || 'kg';
   const nombre   = profile?.nombre || user?.email?.split('@')[0] || '';
   const objetivo = profile?.peso_objetivo_kg;
-  const difNum   = diferencia != null ? parseFloat(diferencia) : null;
-  const difColor = difNum == null         ? 'var(--color-border)'
-                 : difNum < 0             ? 'var(--color-accent-green)'
-                 : difNum > 0             ? 'var(--color-accent-red)'
+
+  // IMC con peso actual + altura del perfil
+  const imcData = (() => {
+    const h = parseFloat(profile?.altura_cm);
+    const w = parseFloat(pesoActual);
+    if (!h || !w || h < 100 || w < 20) return null;
+    const hm = h / 100;
+    const imc = parseFloat((w / (hm * hm)).toFixed(1));
+    let categoria, color;
+    if (imc < 18.5)     { categoria = 'Bajo peso';    color = '#3a8ef6'; }
+    else if (imc < 25)  { categoria = 'Normal';        color = 'var(--color-accent-green)'; }
+    else if (imc < 30)  { categoria = 'Sobrepeso';     color = '#f5a623'; }
+    else if (imc < 35)  { categoria = 'Obesidad I';    color = 'var(--color-accent-red)'; }
+    else if (imc < 40)  { categoria = 'Obesidad II';   color = 'var(--color-accent-red)'; }
+    else                { categoria = 'Obesidad III';  color = 'var(--color-accent-red)'; }
+    return { imc, categoria, color };
+  })();
+
+  // Diferencia = peso actual − objetivo (positivo = falta bajar, negativo = por debajo del objetivo)
+  const faltaNum = pesoActual != null && objetivo != null
+    ? parseFloat((parseFloat(pesoActual) - parseFloat(objetivo)).toFixed(1))
+    : null;
+  const faltaStr = faltaNum != null
+    ? (faltaNum > 0 ? `+${faltaNum}` : `${faltaNum}`)
+    : null;
+  const difColor = faltaNum == null ? 'var(--color-border)'
+                 : faltaNum <= 0   ? 'var(--color-accent-green)'
+                 : faltaNum > 0    ? 'var(--color-accent-red)'
                  : 'var(--color-border)';
 
   const progreso = pesoActual && objetivo && profile?.peso_inicial_kg
@@ -116,14 +178,20 @@ export default function DashboardPage() {
     <div style={{ minHeight: '100dvh', background: 'var(--color-bg-base)', display: 'flex', flexDirection: 'column' }}>
       <PageHeader title="MounjaroTracker" rightSlot={avatarSlot} />
 
-      <main style={{
-        flex: 1, overflowY: 'auto',
-        padding: '20px var(--page-padding-h)',
-        paddingBottom: 'calc(var(--bottom-nav-h) + 80px)',
-      }}>
+      <main
+        ref={mainRef}
+        style={{
+          flex: 1, overflowY: 'auto',
+          padding: '20px var(--page-padding-h)',
+          paddingBottom: 'calc(var(--bottom-nav-h) + 80px)',
+        }}
+      >
         {/* Saludo */}
-        <div style={{ marginBottom: '28px' }}>
-          <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)', marginBottom: '4px' }}>
+        <div className="dash-section" style={{ marginBottom: '28px' }}>
+          <p style={{
+            fontSize: '12px', color: 'var(--color-text-muted)',
+            fontFamily: 'var(--font-body)', marginBottom: '4px',
+          }}>
             {fechaHoy}
           </p>
           <h1 style={{
@@ -137,7 +205,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats 2×2 */}
-        <section style={{ marginBottom: '24px' }}>
+        <section className="dash-section" style={{ marginBottom: '24px' }}>
           <SectionTitle>Resumen</SectionTitle>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <StatCard
@@ -152,11 +220,16 @@ export default function DashboardPage() {
               unit={unidad}
             />
             <StatCard
-              label="Diferencia"
-              value={difNum != null ? (difNum > 0 ? `+${diferencia}` : diferencia) : '—'}
-              unit={unidad}
+              label="Faltan"
+              value={faltaStr ?? '—'}
+              unit={faltaNum != null ? unidad : ''}
               accent={difColor}
-              sub={progreso != null ? `${progreso}% del objetivo` : undefined}
+              sub={faltaNum != null
+                ? faltaNum <= 0
+                  ? '¡Objetivo alcanzado!'
+                  : `Quedan ${Math.abs(faltaNum)} ${unidad} para el objetivo`
+                : progreso != null ? `${progreso}% del objetivo` : undefined
+              }
             />
             <StatCard
               label="Sesiones"
@@ -167,21 +240,39 @@ export default function DashboardPage() {
         </section>
 
         {/* Próxima dosis */}
-        <section style={{ marginBottom: '24px' }}>
+        <section className="dash-section" style={{ marginBottom: '24px' }}>
           <SectionTitle>Dosis Mounjaro</SectionTitle>
           <div
-            style={{ ...card, padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+            style={{
+              ...card, padding: '16px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              cursor: 'pointer',
+              transition: 'background 150ms',
+            }}
             onClick={() => navigate('/dosis')}
           >
             <div>
-              <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)', marginBottom: '4px' }}>
+              <div style={{
+                fontSize: '11px', color: 'var(--color-text-muted)',
+                fontFamily: 'var(--font-body)', marginBottom: '4px',
+              }}>
                 Próximo pinchazo
               </div>
-              <div ref={diasRef} style={{ fontSize: '28px', fontWeight: 700, color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
+              <div
+                ref={diasRef}
+                style={{
+                  fontSize: '28px', fontWeight: 700,
+                  color: 'var(--color-text-primary)',
+                  fontFamily: 'var(--font-mono)', lineHeight: 1,
+                }}
+              >
                 {diasParaProximaDosis != null ? `${diasParaProximaDosis}d` : '—'}
               </div>
               {proximaDosis && (
-                <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '4px', fontFamily: 'var(--font-body)' }}>
+                <div style={{
+                  fontSize: '11px', color: 'var(--color-text-muted)',
+                  marginTop: '4px', fontFamily: 'var(--font-body)',
+                }}>
                   {proximaDosis.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
                 </div>
               )}
@@ -199,7 +290,9 @@ export default function DashboardPage() {
                 {dosisActual_mg} mg
               </div>
             ) : (
-              <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)' }}>
+              <span style={{
+                fontSize: '12px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)',
+              }}>
                 Sin registro
               </span>
             )}
@@ -208,7 +301,7 @@ export default function DashboardPage() {
 
         {/* Gráfica de peso */}
         {pesos.length > 1 && (
-          <section style={{ marginBottom: '24px' }}>
+          <section className="dash-section" style={{ marginBottom: '24px' }}>
             <SectionTitle>Evolución del peso</SectionTitle>
             <div style={{ ...card, padding: '16px' }}>
               <WeightChart data={pesos} />
@@ -216,28 +309,78 @@ export default function DashboardPage() {
           </section>
         )}
 
+        {/* IMC */}
+        {imcData && (
+          <section className="dash-section" style={{ marginBottom: '24px' }}>
+            <SectionTitle>Índice de Masa Corporal</SectionTitle>
+            <div style={{
+              ...card, padding: '16px',
+              borderLeft: `3px solid ${imcData.color}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div>
+                <div style={{
+                  fontSize: '36px', fontWeight: 700,
+                  fontFamily: 'var(--font-mono)', color: imcData.color, lineHeight: 1,
+                }}>
+                  {imcData.imc}
+                </div>
+                <div style={{
+                  fontSize: '10px', color: 'var(--color-text-muted)',
+                  fontFamily: 'var(--font-body)', marginTop: 4,
+                }}>
+                  {pesoActual} {unidad} · {profile.altura_cm} cm
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{
+                  fontSize: '15px', fontWeight: 700,
+                  color: imcData.color, fontFamily: 'var(--font-headlines)',
+                }}>
+                  {imcData.categoria}
+                </div>
+                <div style={{
+                  fontSize: '10px', color: 'var(--color-text-muted)',
+                  fontFamily: 'var(--font-body)', marginTop: 4,
+                }}>
+                  Normal: 18.5 – 24.9
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Calorías hoy */}
-        <section style={{ marginBottom: '8px' }}>
+        <section className="dash-section" style={{ marginBottom: '8px' }}>
           <SectionTitle>Hoy</SectionTitle>
           <div
             style={{ ...card, padding: '16px', cursor: 'pointer' }}
             onClick={() => navigate('/alimentacion')}
           >
-            <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '6px', fontFamily: 'var(--font-body)' }}>
+            <div style={{
+              fontSize: '10px', color: 'var(--color-text-muted)',
+              textTransform: 'uppercase', letterSpacing: '0.07em',
+              marginBottom: '6px', fontFamily: 'var(--font-body)',
+            }}>
               Calorías consumidas
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
               <span
                 ref={calsRef}
                 style={{
-                  fontSize: '32px', fontWeight: 700, fontFamily: 'var(--font-mono)', lineHeight: 1,
+                  fontSize: '32px', fontWeight: 700,
+                  fontFamily: 'var(--font-mono)', lineHeight: 1,
                   color: caloriasHoy > 0 ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
                 }}
               >
                 {caloriasHoy > 0 ? caloriasHoy.toLocaleString('es-ES') : '—'}
               </span>
               {caloriasHoy > 0 && (
-                <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontFamily: 'var(--font-body)' }}>kcal</span>
+                <span style={{
+                  fontSize: '12px', color: 'var(--color-text-secondary)', fontFamily: 'var(--font-body)',
+                }}>
+                  kcal
+                </span>
               )}
             </div>
           </div>

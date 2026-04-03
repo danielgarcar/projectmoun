@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -15,6 +15,18 @@ const RANGES = [
   { label: '6M', days: 180 },
   { label: 'Todo', days: null },
 ]
+
+function CustomDot({ cx, cy, payload, value }) {
+  if (!cx || !cy) return null
+  return (
+    <circle
+      cx={cx} cy={cy} r={3}
+      fill="#ffffff"
+      strokeWidth={0}
+      style={{ filter: 'drop-shadow(0 0 3px rgba(255,255,255,0.5))' }}
+    />
+  )
+}
 
 export default function WeightChart({ data }) {
   const [range, setRange] = useState('Todo')
@@ -38,21 +50,21 @@ export default function WeightChart({ data }) {
   return (
     <div>
       {/* Selector de rango */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
         {RANGES.map(r => (
           <button
             key={r.label}
             onClick={() => setRange(r.label)}
             style={{
-              background: 'none',
-              border: 'none',
+              background: range === r.label ? 'var(--color-surface-hover)' : 'transparent',
+              border: `1px solid ${range === r.label ? 'var(--color-border)' : 'transparent'}`,
               cursor: 'pointer',
-              padding: '4px 8px',
-              color: range === r.label ? '#ffffff' : '#444444',
-              fontSize: 12,
-              fontFamily: '"Courier New", monospace',
-              borderBottom: range === r.label ? '1px solid #ffffff' : '1px solid transparent',
-              transition: 'color 150ms',
+              padding: '4px 10px',
+              color: range === r.label ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
+              fontSize: 11,
+              fontFamily: 'var(--font-mono)',
+              borderRadius: '4px',
+              transition: 'all 150ms',
             }}
           >
             {r.label}
@@ -69,51 +81,66 @@ export default function WeightChart({ data }) {
             justifyContent: 'center',
           }}
         >
-          <p style={{ color: '#444444', fontSize: 13, fontFamily: 'Inter, sans-serif', textAlign: 'center', margin: 0 }}>
-            Registra al menos 2 pesadas para ver la grafica
+          <p style={{
+            color: 'var(--color-text-muted)',
+            fontSize: 12,
+            fontFamily: 'var(--font-body)',
+            textAlign: 'center',
+            margin: 0,
+          }}>
+            Registra al menos 2 pesadas para ver la gráfica
           </p>
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={200}>
-          <LineChart
+          <AreaChart
             data={chartData}
-            margin={{ top: 5, right: 5, bottom: 5, left: -20 }}
+            margin={{ top: 8, right: 5, bottom: 5, left: -20 }}
           >
+            <defs>
+              <linearGradient id="weightGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stopColor="#ffffff" stopOpacity={0.14} />
+                <stop offset="100%" stopColor="#ffffff" stopOpacity={0}    />
+              </linearGradient>
+            </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#1c1c1c" />
             <XAxis
               dataKey="fecha"
-              tick={{ fill: '#444444', fontSize: 11, fontFamily: '"Courier New", monospace' }}
+              tick={{ fill: '#444444', fontSize: 10, fontFamily: 'var(--font-mono)' }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fill: '#444444', fontSize: 11, fontFamily: '"Courier New", monospace' }}
+              tick={{ fill: '#444444', fontSize: 10, fontFamily: 'var(--font-mono)' }}
               axisLine={false}
               tickLine={false}
               domain={['auto', 'auto']}
             />
             <Tooltip
               contentStyle={{
-                background: '#1c1c1c',
+                background: '#141414',
                 border: '1px solid #2a2a2a',
                 borderRadius: 4,
+                padding: '8px 12px',
               }}
-              labelStyle={{ color: '#888888', fontSize: 11 }}
-              itemStyle={{ color: '#f5f5f5', fontSize: 13 }}
-              formatter={(v) => [`${v} kg`, 'Peso']}
+              labelStyle={{ color: '#888888', fontSize: 10, fontFamily: 'var(--font-body)', marginBottom: 2 }}
+              itemStyle={{ color: '#f5f5f5', fontSize: 14, fontFamily: 'var(--font-mono)', fontWeight: 700 }}
+              formatter={(v) => [`${v} kg`, '']}
+              cursor={{ stroke: '#2a2a2a', strokeWidth: 1 }}
             />
-            <Line
+            <Area
               type="monotone"
               dataKey="peso"
               stroke="#ffffff"
               strokeWidth={2}
-              dot={{ fill: '#ffffff', r: 3 }}
-              activeDot={{ r: 5, fill: '#ffffff' }}
+              fill="url(#weightGrad)"
+              dot={<CustomDot />}
+              activeDot={{ r: 5, fill: '#ffffff', strokeWidth: 0 }}
               isAnimationActive={true}
               animationDuration={1200}
               animationEasing="ease-out"
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       )}
     </div>

@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useComidas } from '../../hooks/useComidas.js';
+import { useProfile } from '../../hooks/useProfile.js';
 import { useStagger } from '../../hooks/useStagger.js';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import BottomNav from '../../components/layout/BottomNav.jsx';
 import FAB from '../../components/layout/FAB.jsx';
 import ComidaForm from './ComidaForm.jsx';
+import HidratacionForm from './HidratacionForm.jsx';
 
 const card = {
   background: 'var(--color-surface-card)',
@@ -75,7 +77,14 @@ function ComidaCard({ entry, onEdit, onDelete }) {
 
 export default function AlimentacionPage() {
   const { user } = useAuth();
-  const { comidas, loading, comidasHoy, caloriasHoy, caloriasSemanales, comidasPorFecha, addComida, updateComida, deleteComida } = useComidas(user?.id);
+  const { comidas, loading, comidasHoy, caloriasHoy, hidratacionHoy, caloriasSemanales, comidasPorFecha, addComida, updateComida, deleteComida, addHidratacion } = useComidas(user?.id);
+  const { profile } = useProfile(user?.id);
+
+  const consumoBasal = profile?.consumo_basal_kcal || null;
+  const deficit = consumoBasal ? consumoBasal - caloriasHoy : null;
+
+  const hidratObjetivo = profile?.hidratacion_objetivo_ml || null;
+  const hidratPct = hidratObjetivo ? Math.min(100, Math.round((hidratacionHoy / hidratObjetivo) * 100)) : null;
 
   const [showForm,  setShowForm]  = useState(false);
   const [editEntry, setEditEntry] = useState(null);
@@ -97,23 +106,96 @@ export default function AlimentacionPage() {
       <main style={{ flex: 1, overflowY: 'auto', padding: '20px var(--page-padding-h)', paddingBottom: 'calc(var(--bottom-nav-h) + 80px)' }}>
 
         {/* Resumen hoy */}
-        <div style={{ ...card, padding: '16px 20px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-body)', marginBottom: 4 }}>Hoy</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              <span style={{ fontSize: '36px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: caloriasHoy > 0 ? 'var(--color-text-primary)' : 'var(--color-text-muted)', lineHeight: 1 }}>
-                {caloriasHoy > 0 ? caloriasHoy.toLocaleString('es-ES') : '—'}
-              </span>
-              {caloriasHoy > 0 && <span style={{ fontSize: 12, color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)' }}>kcal</span>}
+        <div style={{ ...card, padding: '16px 20px', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: deficit !== null ? '12px' : 0 }}>
+            <div>
+              <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-body)', marginBottom: 4 }}>Hoy</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                <span style={{ fontSize: '36px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: caloriasHoy > 0 ? 'var(--color-text-primary)' : 'var(--color-text-muted)', lineHeight: 1 }}>
+                  {caloriasHoy > 0 ? caloriasHoy.toLocaleString('es-ES') : '—'}
+                </span>
+                {caloriasHoy > 0 && <span style={{ fontSize: 12, color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)' }}>kcal</span>}
+              </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-body)', marginBottom: 4 }}>Comidas</div>
+              <div style={{ fontSize: '28px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--color-text-primary)', lineHeight: 1 }}>
+                {comidasHoy.length}
+              </div>
             </div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-body)', marginBottom: 4 }}>Comidas</div>
-            <div style={{ fontSize: '28px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--color-text-primary)', lineHeight: 1 }}>
-              {comidasHoy.length}
+
+          {deficit !== null && (
+            <div style={{
+              borderTop: '1px solid var(--color-border)',
+              paddingTop: '12px',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <div>
+                <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-body)', marginBottom: 4 }}>Déficit calórico</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                  <span style={{
+                    fontSize: '28px', fontWeight: 700, fontFamily: 'var(--font-mono)', lineHeight: 1,
+                    color: deficit >= 0 ? 'var(--color-accent-green)' : 'var(--color-accent-red)',
+                  }}>
+                    {deficit >= 0 ? '+' : ''}{deficit.toLocaleString('es-ES')}
+                  </span>
+                  <span style={{ fontSize: 12, color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)' }}>kcal</span>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-body)', marginBottom: 4 }}>Objetivo</div>
+                <div style={{ fontSize: '13px', fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--color-text-secondary)' }}>
+                  {consumoBasal.toLocaleString('es-ES')} kcal
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
+
+        {/* Hidratación */}
+        {(hidratacionHoy > 0 || hidratObjetivo) && (
+          <div style={{ ...card, padding: '16px 20px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: hidratObjetivo ? '10px' : 0 }}>
+              <div>
+                <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-body)', marginBottom: 4 }}>Hidratación hoy</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                  <span style={{ fontSize: '32px', fontWeight: 700, fontFamily: 'var(--font-mono)', lineHeight: 1, color: hidratPct !== null && hidratPct >= 100 ? 'var(--color-accent-green)' : 'var(--color-text-primary)' }}>
+                    {hidratacionHoy >= 1000
+                      ? (hidratacionHoy / 1000).toFixed(1).replace('.', ',')
+                      : hidratacionHoy}
+                  </span>
+                  <span style={{ fontSize: 12, color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)' }}>
+                    {hidratacionHoy >= 1000 ? 'L' : 'ml'}
+                  </span>
+                </div>
+              </div>
+              {hidratObjetivo && (
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-body)', marginBottom: 4 }}>Objetivo</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--color-text-secondary)' }}>
+                    {hidratObjetivo >= 1000 ? (hidratObjetivo / 1000).toFixed(1).replace('.', ',') + ' L' : hidratObjetivo + ' ml'}
+                  </div>
+                  <div style={{ fontSize: '11px', color: hidratPct >= 100 ? 'var(--color-accent-green)' : 'var(--color-text-muted)', fontFamily: 'var(--font-mono)', marginTop: 2 }}>
+                    {hidratPct}%
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {hidratObjetivo && (
+              <div style={{ height: 4, background: 'var(--color-border)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  width: `${hidratPct}%`,
+                  background: hidratPct >= 100 ? 'var(--color-accent-green)' : '#3a8ef6',
+                  borderRadius: 2,
+                  transition: 'width 600ms ease-out',
+                }} />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Gráfica semanal */}
         {caloriasSemanales.some(d => d.calorias > 0) && (
@@ -144,7 +226,11 @@ export default function AlimentacionPage() {
             Historial ({comidas.length})
           </div>
           {loading ? (
-            <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)', textAlign: 'center', padding: '40px 0' }}>Cargando...</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {[1, 2, 3].map(i => (
+                <div key={i} className="skeleton" style={{ height: 72, borderRadius: 4 }} />
+              ))}
+            </div>
           ) : dias.length === 0 ? (
             <div style={{ ...card, padding: '40px 20px', textAlign: 'center' }}>
               <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)' }}>Sin registros. Pulsa + para añadir.</p>
@@ -174,6 +260,7 @@ export default function AlimentacionPage() {
       </main>
 
       <FAB label="Nueva comida" onClick={() => { setEditEntry(null); setShowForm(true); }} />
+      <HidratacionForm onSave={addHidratacion} />
       <BottomNav />
       {showForm && <ComidaForm onClose={handleClose} onSave={handleSave} initialData={editEntry} />}
     </div>

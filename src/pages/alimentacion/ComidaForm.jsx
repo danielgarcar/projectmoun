@@ -58,6 +58,7 @@ export default function ComidaForm({ onClose, onSave, initialData }) {
   const [tipo,     setTipo]     = useState(initialData?.tipo || null)
   const [desc,     setDesc]     = useState(initialData?.descripcion || '')
   const [calorias, setCalorias] = useState(initialData?.calorias?.toString() || '')
+  const [hidrat,   setHidrat]   = useState(initialData?.hidratacion_ml?.toString() || '')
   const [hambre,   setHambre]   = useState(initialData?.hambre_antes || null)
   const [saciedad, setSaciedad] = useState(initialData?.saciedad_despues || null)
   const [loading,  setLoading]  = useState(false)
@@ -74,6 +75,7 @@ export default function ComidaForm({ onClose, onSave, initialData }) {
         tipo,
         descripcion:       desc.trim(),
         calorias:          calorias ? parseInt(calorias, 10) : null,
+        hidratacion_ml:    hidrat ? parseInt(hidrat, 10) : null,
         hambre_antes:      hambre,
         saciedad_despues:  saciedad,
       })
@@ -152,6 +154,15 @@ export default function ComidaForm({ onClose, onSave, initialData }) {
             <label style={labelStyle}>Calorías estimadas (opcional)</label>
             <input type="number" min="0" max="5000" placeholder="450"
               value={calorias} onChange={e => setCalorias(e.target.value)}
+              style={{ ...inputStyle, fontFamily: 'Space Mono, monospace', fontSize: 20 }}
+            />
+          </div>
+
+          {/* Hidratación */}
+          <div>
+            <label style={labelStyle}>Líquidos / hidratación (ml)</label>
+            <input type="number" min="0" max="3000" step="50" placeholder="250"
+              value={hidrat} onChange={e => setHidrat(e.target.value)}
               style={{ ...inputStyle, fontFamily: 'Space Mono, monospace', fontSize: 20 }}
             />
           </div>

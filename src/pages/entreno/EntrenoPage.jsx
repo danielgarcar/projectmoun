@@ -6,6 +6,7 @@ import PageHeader from '../../components/layout/PageHeader.jsx';
 import BottomNav from '../../components/layout/BottomNav.jsx';
 import FAB from '../../components/layout/FAB.jsx';
 import SesionForm from './SesionForm.jsx';
+import MuscleMap from '../../components/ui/MuscleMap.jsx';
 
 const card = {
   background: 'var(--color-surface-card)',
@@ -146,9 +147,9 @@ export default function EntrenoPage() {
     const nuevaSesion = await addSesion(sesion);
     for (let i = 0; i < ejercicios.length; i++) {
       const ej = ejercicios[i];
-      if (!ej.nombre?.trim()) continue;
+      const nombre = ej.nombre?.trim() || `Ejercicio ${i + 1}`;
       const nuevoEj = await addEjercicio(nuevaSesion.id, {
-        nombre:          ej.nombre.trim(),
+        nombre:          nombre,
         grupo_muscular:  ej.grupo_muscular || null,
         orden:           i + 1,
       });
@@ -164,6 +165,19 @@ export default function EntrenoPage() {
       }
     }
   }
+
+  // ── Calor muscular: frecuencia por grupo en los últimos 7 días ──
+  const hace7 = new Date(); hace7.setDate(hace7.getDate() - 7);
+  const heatData = (() => {
+    const freq = {};
+    sesiones
+      .filter(s => new Date(s.fecha_inicio) >= hace7)
+      .forEach(s => (s.proymoun_ejercicios || []).forEach(ej => {
+        const g = ej.grupo_muscular;
+        if (g) freq[g] = (freq[g] || 0) + 1;
+      }));
+    return Object.entries(freq).map(([grupo, count]) => ({ grupo, count }));
+  })();
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--color-bg-base)', display: 'flex', flexDirection: 'column' }}>
@@ -183,6 +197,32 @@ export default function EntrenoPage() {
             </div>
           ))}
         </div>
+
+        {/* ── Mapa muscular semanal ── */}
+        <section style={{ marginBottom: '24px' }}>
+          <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-body)', marginBottom: '12px' }}>
+            Músculos trabajados — últimos 7 días
+          </div>
+          {heatData.length === 0 ? (
+            <div style={{ background: 'var(--color-surface-card)', border: '1px solid var(--color-border)', borderRadius: 4, padding: '28px 20px', textAlign: 'center' }}>
+              <p style={{ fontSize: 12, color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)', margin: 0 }}>
+                Sin datos musculares esta semana
+              </p>
+            </div>
+          ) : (
+            <div style={{ background: 'var(--color-surface-card)', border: '1px solid var(--color-border)', borderRadius: 4, padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <MuscleMap mode="heat" heatData={heatData} scale={0.85} showToggle />
+              {/* Leyenda */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                <span style={{ fontSize: 9, color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)' }}>Poco</span>
+                {['#3a3a3a', '#888888', '#ffffff'].map(c => (
+                  <div key={c} style={{ width: 20, height: 6, background: c, borderRadius: 2 }} />
+                ))}
+                <span style={{ fontSize: 9, color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)' }}>Mucho</span>
+              </div>
+            </div>
+          )}
+        </section>
 
         {/* Historial */}
         <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-body)', marginBottom: '10px' }}>

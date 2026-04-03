@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useDosis } from '../../hooks/useDosis.js';
 import PageHeader from '../../components/layout/PageHeader.jsx';
@@ -20,62 +20,170 @@ const EFECTOS_ICON = {
   'otros':          '💬',
 };
 
-function CountdownCard({ diasPara, proximaDosis, dosisActual_mg }) {
+const CIRC_R    = 44;
+const CIRC_FULL = 2 * Math.PI * CIRC_R; // 276.46
+
+function CircularCountdown({ diasPara, proximaDosis, dosisActual_mg }) {
   const urgente = diasPara !== null && diasPara <= 1;
   const pronto  = diasPara !== null && diasPara <= 3 && diasPara > 1;
 
-  const accentColor = urgente ? 'var(--color-accent-red)'
+  const strokeColor = urgente ? 'var(--color-accent-red)'
                     : pronto  ? '#f5a623'
                     : 'var(--color-accent-white)';
 
+  const maxDays  = 7;
+  const fraction = diasPara != null ? Math.max(0, Math.min(1, diasPara / maxDays)) : 1;
+  const target   = CIRC_FULL * (1 - fraction); // 0 = full ring, CIRC_FULL = empty ring
+
+  // Arranca vacío y anima al valor real con CSS transition
+  const [offset, setOffset] = useState(CIRC_FULL);
+  useEffect(() => {
+    const id = setTimeout(() => setOffset(target), 80);
+    return () => clearTimeout(id);
+  }, [target]);
+
   return (
-    <div style={{ ...card, padding: '20px', marginBottom: '24px', borderLeft: `2px solid ${accentColor}` }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-body)', marginBottom: '8px' }}>
+    <div style={{ ...card, padding: '20px', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+
+        {/* Anillo SVG */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <svg width="110" height="110" viewBox="0 0 120 120" style={{ overflow: 'visible' }}>
+            {/* Glow filter */}
+            <defs>
+              <filter id="ringGlow" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="3" result="blur"/>
+                <feMerge>
+                  <feMergeNode in="blur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+
+            {/* Track */}
+            <circle
+              cx="60" cy="60" r={CIRC_R}
+              fill="none"
+              stroke="var(--color-border)"
+              strokeWidth="4"
+            />
+
+            {/* Progreso */}
+            <circle
+              cx="60" cy="60" r={CIRC_R}
+              fill="none"
+              stroke={strokeColor}
+              strokeWidth="4"
+              strokeDasharray={`${CIRC_FULL} ${CIRC_FULL}`}
+              strokeDashoffset={offset}
+              strokeLinecap="round"
+              filter={urgente ? 'url(#ringGlow)' : undefined}
+              style={{
+                transform: 'rotate(-90deg)',
+                transformOrigin: '60px 60px',
+                transition: 'stroke-dashoffset 1.3s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.3s',
+              }}
+            />
+
+            {/* Número central */}
+            <text
+              x="60" y="55"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill={diasPara != null ? strokeColor : 'var(--color-text-muted)'}
+              fontSize="28"
+              fontWeight="700"
+              fontFamily="'Space Mono', monospace"
+              style={{ transition: 'fill 0.3s' }}
+            >
+              {diasPara != null ? diasPara : '—'}
+            </text>
+
+            {/* Subtexto */}
+            <text
+              x="60" y="76"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="var(--color-text-muted)"
+              fontSize="9"
+              fontFamily="'Inter', sans-serif"
+              letterSpacing="0.08em"
+            >
+              {diasPara === 0 ? '¡HOY!' : diasPara === 1 ? 'DÍA' : 'DÍAS'}
+            </text>
+          </svg>
+        </div>
+
+        {/* Texto derecho */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontSize: '10px', color: 'var(--color-text-muted)',
+            textTransform: 'uppercase', letterSpacing: '0.1em',
+            fontFamily: 'var(--font-body)', marginBottom: '6px',
+          }}>
             Próximo pinchazo
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-            <span style={{ fontSize: '48px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: accentColor, lineHeight: 1 }}>
-              {diasPara != null ? diasPara : '—'}
-            </span>
-            {diasPara != null && (
-              <span style={{ fontSize: '14px', color: 'var(--color-text-secondary)', fontFamily: 'var(--font-body)' }}>
-                {diasPara === 0 ? '¡hoy!' : diasPara === 1 ? 'día' : 'días'}
-              </span>
-            )}
-          </div>
-          {proximaDosis && (
-            <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)', marginTop: '4px' }}>
-              {proximaDosis.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+
+          {proximaDosis ? (
+            <div style={{
+              fontSize: '13px', color: 'var(--color-text-secondary)',
+              fontFamily: 'var(--font-body)', marginBottom: '12px',
+              textTransform: 'capitalize', lineHeight: 1.4,
+            }}>
+              {proximaDosis.toLocaleDateString('es-ES', {
+                weekday: 'long', day: 'numeric', month: 'long',
+              })}
             </div>
-          )}
-          {!proximaDosis && (
-            <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)', marginTop: '4px' }}>
+          ) : (
+            <div style={{
+              fontSize: '12px', color: 'var(--color-text-muted)',
+              fontFamily: 'var(--font-body)', marginBottom: '12px',
+            }}>
               Sin registros aún
             </div>
           )}
-        </div>
 
-        {dosisActual_mg && (
-          <div style={{
-            padding: '10px 16px',
-            background: 'var(--color-surface-hover)',
-            border: '1px solid var(--color-border)',
-            borderRadius: '4px', textAlign: 'center',
-          }}>
-            <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)', marginBottom: '4px' }}>
-              Dosis actual
+          {dosisActual_mg && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'baseline', gap: '3px',
+              padding: '6px 12px',
+              background: 'var(--color-surface-hover)',
+              border: '1px solid var(--color-border)',
+              borderRadius: '4px',
+            }}>
+              <span style={{
+                fontSize: '16px', fontWeight: 700,
+                fontFamily: 'var(--font-mono)', color: 'var(--color-text-primary)',
+              }}>
+                {dosisActual_mg}
+              </span>
+              <span style={{
+                fontSize: '10px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)',
+              }}>
+                mg
+              </span>
             </div>
-            <div style={{ fontSize: '22px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--color-text-primary)', lineHeight: 1 }}>
-              {dosisActual_mg}
-            </div>
-            <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)', marginTop: '2px' }}>
-              mg
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      {/* Banner urgencia */}
+      {urgente && diasPara === 0 && (
+        <div style={{
+          marginTop: '14px',
+          padding: '8px 12px',
+          background: 'rgba(255,59,48,0.08)',
+          border: '1px solid rgba(255,59,48,0.25)',
+          borderRadius: '4px',
+          fontSize: '11px', fontWeight: 600,
+          color: 'var(--color-accent-red)',
+          fontFamily: 'var(--font-body)',
+          textAlign: 'center',
+          letterSpacing: '0.05em',
+        }}>
+          ¡Hoy toca pinchazo!
+        </div>
+      )}
     </div>
   );
 }
@@ -96,14 +204,12 @@ function DosisCard({ entry, onEdit, onDelete }) {
         {/* Info principal */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
-            {/* Dosis badge */}
             <span style={{
               fontSize: '18px', fontWeight: 700,
               fontFamily: 'var(--font-mono)', color: 'var(--color-text-primary)',
             }}>
               {entry.dosis_mg} mg
             </span>
-            {/* Zona badge */}
             <span style={{
               fontSize: '10px', fontFamily: 'var(--font-body)',
               color: 'var(--color-text-muted)',
@@ -116,12 +222,10 @@ function DosisCard({ entry, onEdit, onDelete }) {
             </span>
           </div>
 
-          {/* Fecha y hora */}
           <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)', marginBottom: '6px', textTransform: 'capitalize' }}>
             {fecha} · {hora}
           </div>
 
-          {/* Efectos secundarios */}
           {entry.efectos_secundarios?.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '6px' }}>
               {entry.efectos_secundarios.map(ef => (
@@ -138,7 +242,6 @@ function DosisCard({ entry, onEdit, onDelete }) {
             </div>
           )}
 
-          {/* Nota */}
           {entry.notas && (
             <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)', fontStyle: 'italic' }}>
               {entry.notas}
@@ -212,8 +315,8 @@ export default function DosisPage() {
         paddingBottom: 'calc(var(--bottom-nav-h) + 80px)',
       }}>
 
-        {/* Countdown card */}
-        <CountdownCard
+        {/* Countdown ring */}
+        <CircularCountdown
           diasPara={diasParaProximaDosis}
           proximaDosis={proximaDosis}
           dosisActual_mg={dosisActual_mg}
@@ -269,8 +372,10 @@ export default function DosisPage() {
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>Cargando...</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {[1, 2, 3].map(i => (
+                <div key={i} className="skeleton" style={{ height: 72, borderRadius: 4 }} />
+              ))}
             </div>
           ) : dosis.length === 0 ? (
             <div style={{ ...card, padding: '40px 20px', textAlign: 'center' }}>

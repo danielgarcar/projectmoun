@@ -245,8 +245,10 @@ export default function PesoPage() {
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>Cargando...</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="skeleton" style={{ height: 64, borderRadius: 4 }} />
+              ))}
             </div>
           ) : pesosDesc.length === 0 ? (
             <div style={{ ...card, padding: '40px 20px', textAlign: 'center' }}>

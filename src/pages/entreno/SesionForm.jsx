@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import MuscleMap, { GRUPO_SIDE } from '../../components/ui/MuscleMap.jsx'
 
 const TIPOS_SESION = ['fuerza', 'cardio', 'flexibilidad', 'caminata', 'mixto', 'otro']
-const GRUPOS       = ['pecho', 'espalda', 'piernas', 'hombros', 'bíceps', 'tríceps', 'core', 'cardio', 'full body']
+const GRUPOS       = ['pecho', 'espalda', 'piernas', 'hombros', 'biceps', 'triceps', 'core', 'cardio', 'full_body']
 const SENSACIONES  = ['fácil', 'moderada', 'difícil', 'fallo']
 
 const inputStyle = {
@@ -89,12 +90,13 @@ function EjercicioBlock({ ej, idx, onChange, onDelete, historialNombres = [] }) 
               {historialNombres.map(n => <option key={n} value={n} />)}
             </datalist>
           )}
-          <select value={ej.grupo_muscular} onChange={e => onChange({ ...ej, grupo_muscular: e.target.value })}
-            style={{ ...inputStyle, fontSize: 14, padding: '10px 10px' }}
-          >
-            <option value="">Grupo muscular (opcional)</option>
-            {GRUPOS.map(g => <option key={g} value={g}>{g}</option>)}
-          </select>
+          <MuscleMap
+            mode="select"
+            selectedGroup={ej.grupo_muscular}
+            onSelect={g => onChange({ ...ej, grupo_muscular: g })}
+            scale={0.65}
+            showToggle={true}
+          />
         </div>
         <button type="button" onClick={onDelete}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#555', padding: '4px', flexShrink: 0 }}>
