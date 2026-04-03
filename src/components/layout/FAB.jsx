@@ -1,7 +1,23 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { gsap } from 'gsap';
 
 export default function FAB({ onClick, label = 'Acción principal', icon, disabled = false }) {
   const [pressed, setPressed] = useState(false);
+  const ringRef = useRef(null);
+
+  useEffect(() => {
+    if (!ringRef.current || disabled) return;
+    gsap.set(ringRef.current, { scale: 1, opacity: 0.55 });
+    const tween = gsap.to(ringRef.current, {
+      scale: 1.85,
+      opacity: 0,
+      duration: 1.4,
+      repeat: -1,
+      ease: 'power1.out',
+      transformOrigin: '50% 50%',
+    });
+    return () => tween.kill();
+  }, [disabled]);
 
   return (
     <button
@@ -31,8 +47,20 @@ export default function FAB({ onClick, label = 'Acción principal', icon, disabl
         transition: 'transform 150ms',
         opacity: disabled ? 0.4 : 1,
         outline: 'none',
+        overflow: 'visible',
       }}
     >
+      {/* Anillo pulsante */}
+      <span
+        ref={ringRef}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: '50%',
+          background: 'rgba(255, 255, 255, 0.28)',
+          pointerEvents: 'none',
+        }}
+      />
       {icon ?? (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
              stroke="#0a0a0a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

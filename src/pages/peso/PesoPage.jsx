@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { gsap } from 'gsap';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useProfile } from '../../hooks/useProfile.js';
 import { usePesos } from '../../hooks/usePesos.js';
+import { useStagger } from '../../hooks/useStagger.js';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import BottomNav from '../../components/layout/BottomNav.jsx';
 import FAB from '../../components/layout/FAB.jsx';
@@ -27,37 +29,71 @@ function StatStrip({ pesoActual, pesoInicial, diferencia, objetivo, unidad }) {
       )))
     : null;
 
+  const barRef = useRef(null);
+
+  useEffect(() => {
+    if (!barRef.current || progreso == null) return;
+    gsap.fromTo(
+      barRef.current,
+      { width: '0%' },
+      { width: `${progreso}%`, duration: 1.2, ease: 'power2.out' }
+    );
+  }, [progreso]);
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '24px' }}>
-      {[
-        { label: 'Actual', value: pesoActual ?? '—', unit: unidad, color: 'var(--color-accent-white)' },
-        {
-          label: 'Diferencia',
-          value: difNum != null ? (difNum > 0 ? `+${diferencia}` : diferencia) : '—',
-          unit: difNum != null ? unidad : '',
-          color: difColor,
-        },
-        {
-          label: 'Progreso',
-          value: progreso != null ? `${progreso}%` : '—',
-          unit: progreso != null ? 'objetivo' : '',
-          color: 'var(--color-text-secondary)',
-        },
-      ].map(({ label, value, unit, color }) => (
-        <div key={label} style={{ ...card, padding: '12px', textAlign: 'center' }}>
-          <div style={{ fontSize: '9px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-body)', marginBottom: '4px' }}>
-            {label}
-          </div>
-          <div style={{ fontSize: '20px', fontWeight: 700, fontFamily: 'var(--font-mono)', color, lineHeight: 1 }}>
-            {value}
-          </div>
-          {unit && (
-            <div style={{ fontSize: '9px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)', marginTop: '2px' }}>
-              {unit}
+    <div style={{ marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+        {[
+          { label: 'Actual', value: pesoActual ?? '—', unit: unidad, color: 'var(--color-accent-white)' },
+          {
+            label: 'Diferencia',
+            value: difNum != null ? (difNum > 0 ? `+${diferencia}` : diferencia) : '—',
+            unit: difNum != null ? unidad : '',
+            color: difColor,
+          },
+          {
+            label: 'Progreso',
+            value: progreso != null ? `${progreso}%` : '—',
+            unit: progreso != null ? 'objetivo' : '',
+            color: 'var(--color-text-secondary)',
+          },
+        ].map(({ label, value, unit, color }) => (
+          <div key={label} style={{ ...card, padding: '12px', textAlign: 'center' }}>
+            <div style={{ fontSize: '9px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-body)', marginBottom: '4px' }}>
+              {label}
             </div>
-          )}
+            <div style={{ fontSize: '20px', fontWeight: 700, fontFamily: 'var(--font-mono)', color, lineHeight: 1 }}>
+              {value}
+            </div>
+            {unit && (
+              <div style={{ fontSize: '9px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)', marginTop: '2px' }}>
+                {unit}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Barra de progreso hacia el objetivo */}
+      {progreso != null && (
+        <div style={{
+          height: '3px',
+          background: 'var(--color-border)',
+          borderRadius: '2px',
+          marginTop: '10px',
+          overflow: 'hidden',
+        }}>
+          <div
+            ref={barRef}
+            style={{
+              height: '100%',
+              width: `${progreso}%`,
+              background: 'var(--color-accent-green)',
+              borderRadius: '2px',
+            }}
+          />
         </div>
-      ))}
+      )}
     </div>
   );
 }
@@ -148,6 +184,9 @@ export default function PesoPage() {
   // Orden desc para la lista
   const pesosDesc = [...pesos].reverse();
 
+  // Stagger entrada de tarjetas
+  const listRef = useStagger([pesosDesc.length]);
+
   function handleEdit(entry) {
     setEditEntry(entry);
     setShowForm(true);
@@ -219,7 +258,7 @@ export default function PesoPage() {
               </p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div ref={listRef} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {pesosDesc.map(entry => (
                 <RegistroCard
                   key={entry.id}

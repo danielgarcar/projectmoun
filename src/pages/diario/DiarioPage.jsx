@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useDiario } from '../../hooks/useDiario.js';
+import { useStagger } from '../../hooks/useStagger.js';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import BottomNav from '../../components/layout/BottomNav.jsx';
 import FAB from '../../components/layout/FAB.jsx';
@@ -106,6 +107,7 @@ export default function DiarioPage() {
   }
 
   const resultados = buscarPorTexto(busqueda);
+  const listRef = useStagger([resultados.length]);
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--color-bg-base)', display: 'flex', flexDirection: 'column' }}>
@@ -170,7 +172,7 @@ export default function DiarioPage() {
             </p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div ref={listRef} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {resultados.map(e => (
               <EntradaCard key={e.id} entrada={e} onEdit={handleEdit} onDelete={deleteEntrada} />
             ))}

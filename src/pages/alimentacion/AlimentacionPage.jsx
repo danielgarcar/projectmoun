@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useComidas } from '../../hooks/useComidas.js';
+import { useStagger } from '../../hooks/useStagger.js';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import BottomNav from '../../components/layout/BottomNav.jsx';
 import FAB from '../../components/layout/FAB.jsx';
@@ -87,6 +88,7 @@ export default function AlimentacionPage() {
   }
 
   const dias = Object.keys(comidasPorFecha).sort((a, b) => b.localeCompare(a));
+  const listRef = useStagger([comidas.length]);
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--color-bg-base)', display: 'flex', flexDirection: 'column' }}>
@@ -148,7 +150,8 @@ export default function AlimentacionPage() {
               <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)' }}>Sin registros. Pulsa + para añadir.</p>
             </div>
           ) : (
-            dias.map(dia => {
+            <div ref={listRef}>
+            {dias.map(dia => {
               const totalDia = comidasPorFecha[dia].reduce((s, c) => s + (c.calorias || 0), 0);
               const fechaFmt = new Date(dia + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
               return (
@@ -164,7 +167,8 @@ export default function AlimentacionPage() {
                   </div>
                 </div>
               );
-            })
+            })}
+            </div>
           )}
         </section>
       </main>

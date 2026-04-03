@@ -5,6 +5,7 @@ import { usePesos } from '../../hooks/usePesos.js';
 import { useDosis } from '../../hooks/useDosis.js';
 import { useComidas } from '../../hooks/useComidas.js';
 import { useSesiones } from '../../hooks/useSesiones.js';
+import { useCountUp } from '../../hooks/useCountUp.js';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import BottomNav from '../../components/layout/BottomNav.jsx';
 import FAB from '../../components/layout/FAB.jsx';
@@ -30,13 +31,14 @@ function SectionTitle({ children }) {
 }
 
 function StatCard({ label, value, unit, accent, sub }) {
+  const numRef = useCountUp(value);
   return (
     <div style={{ ...card, padding: '14px', borderLeft: `2px solid ${accent || 'var(--color-border)'}` }}>
       <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '6px', fontFamily: 'var(--font-body)' }}>
         {label}
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-        <span style={{ fontSize: '26px', fontWeight: 700, color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
+        <span ref={numRef} style={{ fontSize: '26px', fontWeight: 700, color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
           {value ?? '—'}
         </span>
         {unit && (
@@ -65,6 +67,12 @@ export default function DashboardPage() {
   const { dosisActual_mg, proximaDosis, diasParaProximaDosis } = useDosis(user?.id);
   const { caloriasHoy } = useComidas(user?.id);
   const { sesionesEsemana } = useSesiones(user?.id);
+
+  const diasRef  = useCountUp(diasParaProximaDosis, { suffix: 'd' });
+  const calsRef  = useCountUp(
+    caloriasHoy > 0 ? caloriasHoy : null,
+    { formatter: (v) => Math.round(v).toLocaleString('es-ES') }
+  );
 
   const unidad   = profile?.unidad_peso || 'kg';
   const nombre   = profile?.nombre || user?.email?.split('@')[0] || '';
@@ -169,7 +177,7 @@ export default function DashboardPage() {
               <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)', marginBottom: '4px' }}>
                 Próximo pinchazo
               </div>
-              <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
+              <div ref={diasRef} style={{ fontSize: '28px', fontWeight: 700, color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
                 {diasParaProximaDosis != null ? `${diasParaProximaDosis}d` : '—'}
               </div>
               {proximaDosis && (
@@ -219,10 +227,13 @@ export default function DashboardPage() {
               Calorías consumidas
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-              <span style={{
-                fontSize: '32px', fontWeight: 700, fontFamily: 'var(--font-mono)', lineHeight: 1,
-                color: caloriasHoy > 0 ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
-              }}>
+              <span
+                ref={calsRef}
+                style={{
+                  fontSize: '32px', fontWeight: 700, fontFamily: 'var(--font-mono)', lineHeight: 1,
+                  color: caloriasHoy > 0 ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
+                }}
+              >
                 {caloriasHoy > 0 ? caloriasHoy.toLocaleString('es-ES') : '—'}
               </span>
               {caloriasHoy > 0 && (

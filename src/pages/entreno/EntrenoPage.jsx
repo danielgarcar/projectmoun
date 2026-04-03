@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useSesiones } from '../../hooks/useSesiones.js';
+import { useStagger } from '../../hooks/useStagger.js';
 import PageHeader from '../../components/layout/PageHeader.jsx';
 import BottomNav from '../../components/layout/BottomNav.jsx';
 import FAB from '../../components/layout/FAB.jsx';
@@ -134,6 +135,7 @@ export default function EntrenoPage() {
   const { user } = useAuth();
   const { sesiones, loading, sesionesEsemana, volumenTotal, addSesion, addEjercicio, addSerie, deleteSesion } = useSesiones(user?.id);
   const [showForm, setShowForm] = useState(false);
+  const listRef = useStagger([sesiones.length]);
 
   // Nombres únicos de ejercicios del historial para autocompletado
   const historialNombres = [...new Set(
@@ -193,7 +195,9 @@ export default function EntrenoPage() {
             <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)' }}>Sin sesiones. Pulsa + para registrar.</p>
           </div>
         ) : (
-          sesiones.map(s => <SesionCard key={s.id} sesion={s} onDelete={deleteSesion} />)
+          <div ref={listRef}>
+            {sesiones.map(s => <SesionCard key={s.id} sesion={s} onDelete={deleteSesion} />)}
+          </div>
         )}
       </main>
 

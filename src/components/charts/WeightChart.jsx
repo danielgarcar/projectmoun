@@ -109,6 +109,9 @@ export default function WeightChart({ data }) {
               strokeWidth={2}
               dot={{ fill: '#ffffff', r: 3 }}
               activeDot={{ r: 5, fill: '#ffffff' }}
+              isAnimationActive={true}
+              animationDuration={1200}
+              animationEasing="ease-out"
             />
           </LineChart>
         </ResponsiveContainer>
