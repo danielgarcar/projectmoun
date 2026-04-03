@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon.svg'],
+      includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'],
       devOptions: { enabled: true },
       manifest: {
         name: 'MounjaroTracker',
@@ -23,15 +23,21 @@ export default defineConfig({
         categories: ['health', 'fitness', 'medical'],
         icons: [
           {
-            src: 'icon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
+            src: 'icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
             purpose: 'any',
           },
           {
-            src: 'icon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
+            src: 'icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: 'icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
             purpose: 'maskable',
           },
         ],
