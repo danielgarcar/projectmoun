@@ -1,0 +1,29 @@
+# Dependencias
+node_modules/
+
+# Build
+dist/
+dev-dist/
+
+# Variables de entorno — NUNCA subir al repo
+.env
+.env.local
+.env.*.local
+
+# Caché / herramientas
+.vite/
+.cache/
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/settings.json
+.idea/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Claude / MCP (opcional — quita la línea si quieres subir el config)
+.claude/
+.mcp.json

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#0a0a0a"/>
+  <!-- Letra M centrada, tipografía gruesa -->
+  <path d="M104 360 L104 152 L180 152 L256 288 L332 152 L408 152 L408 360 L352 360 L352 228 L284 360 L228 360 L160 228 L160 360 Z" fill="#ffffff"/>
+</svg>

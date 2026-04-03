@@ -1,0 +1,187 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design System: Nothing Technology (Minimalismo extremo) ── */
+:root {
+  /* Paleta: Blanco/Negro */
+  --color-bg-base:        #0a0a0a;
+  --color-surface-card:   #141414;
+  --color-surface-hover:  #1c1c1c;
+  --color-border:         #2a2a2a;
+
+  --color-text-primary:   #f5f5f5;
+  --color-text-secondary: #888888;
+  --color-text-muted:     #555555;
+
+  /* Accents */
+  --color-accent-white:   #ffffff;
+  --color-accent-red:     #ff3b30;
+  --color-accent-green:   #30d158;
+
+  /* Spacing (múltiplos de 4px) */
+  --space-xs:   4px;
+  --space-sm:   8px;
+  --space-md:   12px;
+  --space-lg:   16px;
+  --space-xl:   20px;
+  --space-2xl:  24px;
+  --space-3xl:  32px;
+  --space-4xl:  40px;
+
+  /* Border radius */
+  --radius-sm:  4px;
+  --radius-md:  4px;
+  --radius-lg:  4px;
+
+  /* Tipografía */
+  --font-headlines: 'Space Grotesk', sans-serif;
+  --font-body:      'Inter', sans-serif;
+  --font-mono:      'Space Mono', monospace;
+
+  /* Componentes */
+  --bottom-nav-h:  56px;
+  --fab-size:      56px;
+  --page-padding-h: 20px;
+
+  /* Transiciones */
+  --transition-fast:    150ms;
+  --transition-normal:  300ms;
+  --transition-slow:    350ms;
+  --easing-out:         cubic-bezier(0.16, 1, 0.3, 1);
+  --easing-in:          cubic-bezier(0.7, 0, 0.84, 0);
+}
+
+
+/* ── Base Styles ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { 
+  width: 4px; 
+}
+::-webkit-scrollbar-track { 
+  background: var(--color-bg-base); 
+}
+::-webkit-scrollbar-thumb { 
+  background: var(--color-border); 
+  border-radius: 4px; 
+}
+
+/* ── Utility Classes ── */
+.glass {
+  background: rgba(20, 20, 20, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--color-border);
+}
+
+.btn-primary {
+  padding: 12px 16px;
+  background: var(--color-accent-white);
+  color: var(--color-bg-base);
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: opacity var(--transition-normal) var(--easing-out);
+}
+
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Safe area inset helpers */
+.pb-safe {
+  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
+}
+
+/* ── Tema Claro ─────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --color-bg-base:        #f2f2f2;
+  --color-surface-card:   #ffffff;
+  --color-surface-hover:  #e8e8e8;
+  --color-border:         #d0d0d0;
+
+  --color-text-primary:   #0a0a0a;
+  --color-text-secondary: #444444;
+  --color-text-muted:     #888888;
+
+  /* En modo claro el "accent blanco" se vuelve negro (CTA oscuro) */
+  --color-accent-white:   #0a0a0a;
+  --color-accent-red:     #ff3b30;
+  --color-accent-green:   #28a745;
+}
+
+[data-theme="light"] body {
+  background-color: #f2f2f2;
+  color: #0a0a0a;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track { background: #f2f2f2; }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: #d0d0d0; }
+
+/* ── Optimizaciones UX Mobile ───────────────────────────────────── */
+
+/* Elimina el delay de 300ms en tap en toda la interfaz */
+button, a, [role="button"], input, textarea, select, label {
+  touch-action: manipulation;
+}
+
+/* Evita el rebote vertical al hacer scroll en iOS */
+body {
+  overscroll-behavior-y: none;
+}
+
+/* Mejora el rendering en GPU para elementos animados */
+.drawer-animated {
+  will-change: transform;
+}
+
+/* Previene selección de texto al pulsar botones */
+button, [role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Input más grande en mobile para evitar zoom automático en iOS */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+input[type="datetime-local"],
+textarea,
+select {
+  font-size: max(16px, 1em); /* iOS no hace zoom si font-size >= 16px */
+}
+
+
